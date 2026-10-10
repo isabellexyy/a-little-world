@@ -12,7 +12,16 @@ window.prepareCharacter=async function(image){
   let sum=0,weight=0;for(let y=Math.round(top+(bottom-top)*.3);y<top+(bottom-top)*.48;y++)for(let x=0;x<sw;x++){const a=d[(y*sw+x)*4+3];if(a>120){sum+=x*a;weight+=a;}}
   raw.push({c,top,bottom,anchor:sum/weight});
  }
- const heights=raw.map(f=>f.bottom-f.top).sort((a,b)=>a-b);const ratio=480/heights[4];
- for(const f of raw){const c=document.createElement('canvas');c.width=384;c.height=512;c.getContext('2d').drawImage(f.c,192-f.anchor*ratio,506-f.bottom*ratio,f.c.width*ratio,f.c.height*ratio);frames.push(c);}
+ const heights=raw.map(f=>f.bottom-f.top).sort((a,b)=>a-b);const referenceHeight=heights[4];
+ for(const f of raw){const ratio=480/(f.bottom-f.top);const c=document.createElement('canvas');c.width=384;c.height=512;c.getContext('2d').drawImage(f.c,192-f.anchor*ratio,506-f.bottom*ratio,f.c.width*ratio,f.c.height*ratio);frames.push(c);}
+ // Keep the exact same head/hair/torso throughout the gait. Blend the
+ // waist seam, rather than switching eight independently painted faces.
+ const stable=frames[0];
+ for(let i=1;i<frames.length;i++){
+  const upper=document.createElement('canvas');upper.width=384;upper.height=512;
+  const u=upper.getContext('2d');u.drawImage(stable,0,0);
+  u.globalCompositeOperation='destination-in';const fade=u.createLinearGradient(0,244,0,276);fade.addColorStop(0,'#000');fade.addColorStop(1,'transparent');u.fillStyle=fade;u.fillRect(0,0,384,512);
+  const ctx=frames[i].getContext('2d');ctx.globalCompositeOperation='destination-out';ctx.fillStyle=fade;ctx.fillRect(0,0,384,512);ctx.globalCompositeOperation='lighter';ctx.drawImage(upper,0,0);ctx.globalCompositeOperation='source-over';
+ }
  return frames;
 };
