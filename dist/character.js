@@ -1,6 +1,6 @@
 'use strict';
 // Equal-grid sprite sheet: idle first, then seven walking poses.
-window.prepareCharacter=async function(image){
+window.prepareCharacter=async function(image,armImage){
  const frames=[],raw=[];
  for(let i=0;i<8;i++){
   const sx=Math.round((i%4)*image.width/4),sy=Math.round(Math.floor(i/4)*image.height/2);
@@ -22,6 +22,16 @@ window.prepareCharacter=async function(image){
   const u=upper.getContext('2d');u.drawImage(stable,0,0);
   u.globalCompositeOperation='destination-in';const fade=u.createLinearGradient(0,120,0,148);fade.addColorStop(0,'#000');fade.addColorStop(1,'transparent');u.fillStyle=fade;u.fillRect(0,0,384,512);
   const ctx=frames[i].getContext('2d');ctx.globalCompositeOperation='destination-out';ctx.fillStyle=fade;ctx.fillRect(0,0,384,512);ctx.globalCompositeOperation='lighter';ctx.drawImage(upper,0,0);ctx.globalCompositeOperation='source-over';
+ }
+ if(armImage){
+  const armFrames=await window.prepareCharacter(armImage);
+  for(let i=1;i<frames.length;i++){
+   const layer=document.createElement('canvas');layer.width=384;layer.height=512;
+   const ctx=layer.getContext('2d');ctx.drawImage(armFrames[i],0,0);
+   const band=ctx.createLinearGradient(0,0,0,512);band.addColorStop(0,'transparent');band.addColorStop(110/512,'transparent');band.addColorStop(150/512,'#000');band.addColorStop(305/512,'#000');band.addColorStop(340/512,'transparent');band.addColorStop(1,'transparent');
+   ctx.globalCompositeOperation='destination-in';ctx.fillStyle=band;ctx.fillRect(0,0,384,512);
+   const base=frames[i].getContext('2d');base.globalCompositeOperation='destination-out';base.fillStyle=band;base.fillRect(0,0,384,512);base.globalCompositeOperation='lighter';base.drawImage(layer,0,0);base.globalCompositeOperation='source-over';
+  }
  }
  return frames;
 };

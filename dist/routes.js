@@ -5,8 +5,8 @@ function buildHouseRoute(from,to,startX=from.stand,startY=from.foot){
  let level=floor(startY),target=floor(to.foot),cx=startX;const result=[];
  function walk(x,y){result.push({x,y,ms:Math.max(1000,Math.abs(x-cx)/65*1000),hidden:false});cx=x;}
  if(level===target){walk(to.stand,to.foot);return result;}
- // Head across the current floor toward its farther stairwell.
- let edge=startX<768?1588:-52;
+ // Enter the destination from its side of the building.
+ let edge=to.stand<startX?-52:to.stand>startX?1588:(startX<768?-52:1588);
  walk(edge,floors[level]);
  while(level!==target){
   level+=Math.sign(target-level);
