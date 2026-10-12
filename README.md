@@ -55,7 +55,7 @@ python3 -m http.server 8765 --directory dist
 - `house-clean.png`：完整无文字空景，用于保留原画的前景颜色。
 - `foreground.png`：外墙、窗框、树和窗帘的透明遮罩来源。
 - `furniture/furniture-sheet-v1.png`：正在使用的家具总图，由代码裁切。
-- `girl-walk-sheet.png`、`girl-arm-swing-sheet.png`：人物步帧及摆臂素材。
+- `girl-walk-sheet.png`：正在使用的人物步帧。`girl-arm-swing-sheet.png` 保留为旧素材，当前不加载。
 
 其余早期素材保留作参考。家具目录中的独立旧裁图存在裁切问题，当前页面不使用它们。
 
@@ -85,3 +85,9 @@ GitHub 保存代码、素材和版本记录；当前网站由 Sites 托管。这
 线上地址：https://a-little-world-night-house.sillycoot2.chatgpt.site/
 
 需要上线时，在 Codex 中说明「发布当前版本」即可继续现有发布流程。GitHub 登录信息由本机认证工具管理，不应写进项目文件。
+
+## 肩线稳定与轻摆臂
+
+`character.js` 的 `composeCharacter` 保留原腿部步序和过渡，头部、肩膀及中央躯干使用同一张站姿素材。肩线以下的袖子与手臂通过连续网格变形小幅摆动，避免不同生成帧的肩线跳动。摆臂与整套八步节奏同步，左右幅度不同以形成前后臂的轻微反向运动；启停时幅度平滑变化。不是简单增加生成帧数量。
+
+可调参数：`swing` 中的 `18` 是素材坐标里的最大手部横向位移，`145` 是固定肩部区域下界。普通房间显示高度为 140，因此实际手部位移约 5 像素。
