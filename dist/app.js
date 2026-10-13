@@ -34,11 +34,13 @@ function paintGirl(ctx,pose,next,blend,height,foot){
 function draw(){
  person.clearRect(0,0,W,H);personFront.clearRect(0,0,W,H);
  if(ready&&!hidden&&$('showPerson').checked){
-  const moving=active&&!active.hidden,gait=[0,2,1,2,0,5,4,5];
-  const phase=walkDistance/11,step=Math.floor(phase),fraction=phase-step;
-  const pose=characterFrames[moving?gait[step%gait.length]:0]||sprite;
-  const next=characterFrames[moving?gait[(step+1)%gait.length]:0];
-  const blend=moving?Math.max(0,(fraction-.65)/.35):0;
+  // Contact → passing → opposite contact → opposite passing. Do not insert
+  // the idle pose or reverse a half-step in the middle of the walk cycle.
+  const gait=[1,2,4,5],phase=walkDistance/11;
+  const legPhase=phase/2,step=Math.floor(legPhase),fraction=legPhase-step;
+  const pose=characterFrames[gait[step%gait.length]]||sprite;
+  const next=characterFrames[gait[(step+1)%gait.length]];
+  const blend=fraction*fraction*(3-2*fraction);
   const composed=window.composeCharacter(pose,next,blend,phase,armStrength);
   for(const room of rooms){
    if(Math.abs(y-room.foot)>45||x<room.x-110||x>room.x+room.w+110)continue;

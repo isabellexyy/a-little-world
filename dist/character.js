@@ -22,6 +22,34 @@ window.prepareCharacter=async function(image){
   u.globalCompositeOperation='destination-in';const fade=u.createLinearGradient(0,120,0,148);fade.addColorStop(0,'#000');fade.addColorStop(1,'transparent');u.fillStyle=fade;u.fillRect(0,0,384,512);
   const ctx=frames[i].getContext('2d');ctx.globalCompositeOperation='destination-out';ctx.fillStyle=fade;ctx.fillRect(0,0,384,512);ctx.globalCompositeOperation='lighter';ctx.drawImage(upper,0,0);ctx.globalCompositeOperation='source-over';
  }
+ // Match horizontal silhouette landmarks before blending leg images. This
+ // moves the contours together instead of showing two separated ghost legs.
+ const legRows=new Map();
+ for(const frame of frames){
+  const pixels=frame.getContext('2d').getImageData(0,0,384,512).data,rows=[];
+  for(let y=306;y<512;y+=2){
+   const xs=[];for(let x=0;x<384;x++)if(pixels[(y*384+x)*4+3]>40)xs.push(x);
+   rows.push(xs.length?Array.from({length:17},(_,i)=>i===16?xs[xs.length-1]+1:xs[Math.floor(i/16*(xs.length-1))]):null);
+  }
+  legRows.set(frame,rows);
+ }
+ function paintLegMorph(ctx,a,b,t,alpha){
+  const ar=legRows.get(a),br=legRows.get(b);
+  ctx.globalCompositeOperation='lighter';
+  for(let row=0;row<ar.length;row++){
+   const y=306+row*2,as=ar[row],bs=br[row];
+   if(!as||!bs){
+    if(as){ctx.globalAlpha=(1-t)*alpha;ctx.drawImage(a,0,y,384,2,0,y,384,2);}
+    if(bs){ctx.globalAlpha=t*alpha;ctx.drawImage(b,0,y,384,2,0,y,384,2);}continue;
+   }
+   for(let j=0;j<16;j++){
+    const left=as[j]*(1-t)+bs[j]*t,right=as[j+1]*(1-t)+bs[j+1]*t;
+    if(right<=left)continue;
+    if(as[j+1]>as[j]){ctx.globalAlpha=(1-t)*alpha;ctx.drawImage(a,as[j],y,as[j+1]-as[j],2,left,y,right-left,2);}
+    if(bs[j+1]>bs[j]){ctx.globalAlpha=t*alpha;ctx.drawImage(b,bs[j],y,bs[j+1]-bs[j],2,left,y,right-left,2);}
+   }
+  }
+ }
  // Retain the normalized leg poses, but use one coherent upper body for every
  // frame. A continuous sleeve warp below fixed shoulders replaces the varying
  // generated shoulder silhouettes. No new image is fetched during animation.
@@ -32,8 +60,8 @@ window.prepareCharacter=async function(image){
  const columns=[0,125,178,202,221,251,384];
  function weight(x){return x<=178?1:x<202?(202-x)/24:x<=221?0:x<251?-(x-221)/30*.65:-.65;}
  window.composeCharacter=function(pose,next,blend,phase,strength=1){
-  cc.clearRect(0,0,384,512);cc.globalCompositeOperation='source-over';cc.globalAlpha=1-blend;cc.drawImage(pose,0,0);
-  if(blend){cc.globalCompositeOperation='lighter';cc.globalAlpha=blend;cc.drawImage(next,0,0);}
+  cc.clearRect(0,0,384,512);paintLegMorph(cc,pose,next,blend,strength);
+  if(strength<1){cc.globalCompositeOperation='lighter';cc.globalAlpha=1-strength;cc.drawImage(stable,0,0);}
   cc.globalAlpha=1;cc.globalCompositeOperation='destination-out';cc.fillStyle=seam;cc.fillRect(0,0,384,512);cc.globalCompositeOperation='source-over';
   uc.clearRect(0,0,384,512);uc.globalCompositeOperation='source-over';
   // One cycle per complete eight-step leg sequence; shoulder pixels (y <= 145)
